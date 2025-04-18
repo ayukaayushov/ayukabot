@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог Объявлений</title>
+    <!-- Подключаем скрипт Telegram Web App -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Простые стили для наглядности */
+        body {
+            font-family: sans-serif;
+            padding: 10px;
+            color: var(--tg-theme-text-color); /* Используем цвета темы Telegram */
+            background-color: var(--tg-theme-bg-color);
+        }
+        #categories-list, #ads-list {
+            list-style: none;
+            padding: 0;
+        }
+        #categories-list li, #ads-list li {
+            padding: 8px 5px;
+            border-bottom: 1px solid var(--tg-theme-hint-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+         #categories-list li:hover {
+             background-color: var(--tg-theme-secondary-bg-color);
+         }
+        .category-name {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .nav-arrow { /* Стрелочка для категорий с детьми */
+             color: var(--tg-theme-hint-color);
+        }
+        .ad-preview {
+            font-size: 0.9em;
+            color: var(--tg-theme-hint-color);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        button {
+            padding: 5px 8px;
+            margin-left: 5px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #back-button {
+            margin-bottom: 10px;
+        }
+        #loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--tg-theme-hint-color);
+            display: none; /* Скрыт по умолчанию */
+        }
+         #error-message {
+             text-align: center;
+             padding: 20px;
+             color: red; /* Ошибки красным */
+             display: none; /* Скрыт по умолчанию */
+         }
+    </style>
+</head>
+<body>
+
+    <h2 id="current-path">Каталог</h2>
+    <button id="back-button" style="display: none;">⬅️ Назад</button>
+
+    <div id="loading">Загрузка...</div>
+    <div id="error-message"></div>
+
+    <ul id="categories-list">
+        <!-- Сюда будут загружаться категории -->
+    </ul>
+
+    <ul id="ads-list">
+        <!-- Сюда будут загружаться объявления -->
+    </ul>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const apiBaseUrl = "http://127.0.0.1:8000"; // URL вашего API
+
+        const categoriesListEl = document.getElementById('categories-list');
+        const adsListEl = document.getElementById('ads-list');
+        const currentPathEl = document.getElementById('current-path');
+        const backButton = document.getElementById('back-button');
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error-message');
+
+        let categoryHistory = []; // Стек для хранения пути навигации
+
+        // --- Функции отображения ---
+
+        function showLoading() {
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none'; // Скрываем ошибку при новой загрузке
+            categoriesListEl.innerHTML = ''; // Очищаем списки
+            adsListEl.innerHTML = '';
+        }
+
+        function hideLoading() {
+            loadingEl.style.display = 'none';
+        }
+
+        function showError(message) {
+            hideLoading();
+            errorEl.textContent = `Ошибка: ${message}`;
+            errorEl.style.display = 'block';
+        }
+
+        function renderCategories(categories) {
+            categoriesListEl.innerHTML = ''; // Очищаем перед рендером
+            if (!categories || categories.length === 0) {
+                 // Можно добавить сообщение "Подкатегорий нет", если мы не в корне
+                 if (categoryHistory.length > 0) {
+                      const li = document.createElement('li');
+                      li.textContent = 'Подкатегорий нет';
+                      li.style.color = 'var(--tg-theme-hint-color)';
+                      li.style.cursor = 'default';
+                      categoriesListEl.appendChild(li);
+                 }
+                 return;
+            }
+
+            categories.forEach(cat => {
+                const li = document.createElement('li');
+                li.dataset.categoryId = cat.id; // Сохраняем ID категории
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'category-name';
+                nameSpan.textContent = cat.name;
+                li.appendChild(nameSpan);
+
+                // Если есть подкатегории, добавляем стрелку и делаем кликабельным для навигации
+                if (cat.has_children) {
+                    const arrowSpan = document.createElement('span');
+                    arrowSpan.className = 'nav-arrow';
+                    arrowSpan.textContent = '>';
+                    li.appendChild(arrowSpan);
+                    li.addEventListener('click', () => navigateToCategory(cat.id, cat.name));
+                } else {
+                    // Если нет подкатегорий, клик сразу показывает объявления
+                    li.addEventListener('click', () => showAds(cat.id, cat.name));
+                }
+
+                // Кнопка подписки
+                const subscribeBtn = document.createElement('button');
+                subscribeBtn.textContent = 'Подписаться';
+                subscribeBtn.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Предотвращаем клик по li при клике на кнопку
+                    subscribeToCategory(cat.id);
+                });
+                li.appendChild(subscribeBtn);
+
+
+                categoriesListEl.appendChild(li);
+            });
+        }
+
+        function renderAds(adsResponse) {
+             adsListEl.innerHTML = ''; // Очищаем перед рендером
+             if (!adsResponse || !adsResponse.items || adsResponse.items.length === 0) {
+                 const li = document.createElement('li');
+                 li.textContent = 'Объявлений в этой категории нет.';
+                 li.style.color = 'var(--tg-theme-hint-color)';
+                 li.style.cursor = 'default';
+                 adsListEl.appendChild(li);
+                 return;
+             }
+
+             adsResponse.items.forEach(ad => {
+                 const li = document.createElement('li');
+                 li.dataset.adId = ad.id;
+
+                 const adDiv = document.createElement('div');
+                 adDiv.style.flexGrow = '1';
+
+                 const textSpan = document.createElement('span');
+                 textSpan.textContent = ad.text_preview;
+                 if (ad.has_media) {
+                      textSpan.textContent += " 🖼️"; // Иконка, если есть медиа
+                 }
+                 adDiv.appendChild(textSpan);
+
+                 // Можно добавить еще деталей, если нужно
+                 // const detailSpan = document.createElement('div');
+                 // detailSpan.className = 'ad-preview';
+                 // detailSpan.textContent = `ID: ${ad.id}`;
+                 // adDiv.appendChild(detailSpan);
+
+                 li.appendChild(adDiv);
+
+                 // Кнопка просмотра
+                 const viewBtn = document.createElement('button');
+                 viewBtn.textContent = 'Смотреть';
+                 viewBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    viewAd(ad.id);
+                 });
+                 li.appendChild(viewBtn);
+
+                 // Клик по всему элементу тоже может открывать объявление
+                 li.addEventListener('click', () => viewAd(ad.id));
+
+
+                 adsListEl.appendChild(li);
+             });
+
+             // TODO: Добавить логику пагинации, если total_pages > 1
+        }
+
+
+        // --- Функции взаимодействия с API ---
+
+        async function fetchCategories(parentId = null) {
+            showLoading();
+            let url = `${apiBaseUrl}/api/categories`;
+            if (parentId !== null) {
+                url += `?parent_id=${parentId}`;
+            }
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const categories = await response.json();
+                hideLoading();
+                renderCategories(categories);
+            } catch (error) {
+                console.error('Ошибка загрузки категорий:', error);
+                showError(`Не удалось загрузить категории. ${error.message}`);
+            }
+        }
+
+        async function fetchAds(categoryId, page = 1, limit = 20) {
+             // Не очищаем категории при загрузке объявлений
+             adsListEl.innerHTML = ''; // Очищаем только список объявлений
+             showLoading(); // Показываем загрузку
+             const url = `${apiBaseUrl}/api/categories/${categoryId}/ads?page=${page}&limit=${limit}`;
+             try {
+                 const response = await fetch(url);
+                 if (!response.ok) {
+                    // Обработка 404 (страница не найдена) отдельно не нужна, т.к. API вернет пустой список или ошибку
+                     throw new Error(`HTTP error! status: ${response.status}`);
+                 }
+                 const adsResponse = await response.json();
+                 hideLoading();
+                 renderAds(adsResponse);
+             } catch (error) {
+                 console.error(`Ошибка загрузки объявлений для категории ${categoryId}:`, error);
+                 showError(`Не удалось загрузить объявления. ${error.message}`);
+             }
+        }
+
+        // --- Функции навигации и действий ---
+
+        function updateBackButton() {
+            if (categoryHistory.length > 0) {
+                backButton.style.display = 'inline-block';
+            } else {
+                backButton.style.display = 'none';
+            }
+        }
+
+        function updatePathDisplay() {
+             if (categoryHistory.length === 0) {
+                 currentPathEl.textContent = "Каталог";
+             } else {
+                 // Показываем путь из истории
+                 currentPathEl.textContent = categoryHistory.map(item => item.name).join(" / ");
+             }
+        }
+
+        function navigateToCategory(categoryId, categoryName) {
+             console.log(`Переход в категорию: ${categoryId} (${categoryName})`);
+             // Добавляем текущий уровень в историю
+             categoryHistory.push({ id: categoryId, name: categoryName });
+             updatePathDisplay();
+             updateBackButton();
+             // Загружаем подкатегории и объявления для новой категории
+             fetchCategories(categoryId); // Загружаем подкатегории
+             fetchAds(categoryId); // Загружаем объявления
+        }
+
+        function showAds(categoryId, categoryName) {
+             // Эта функция вызывается, когда у категории нет подкатегорий
+             console.log(`Показ объявлений для конечной категории: ${categoryId} (${categoryName})`);
+             // Добавляем в историю, если это не был прямой клик на категорию без детей из списка
+             // Проверим, отличается ли последний элемент истории от текущего
+             const lastHistoryItem = categoryHistory[categoryHistory.length - 1];
+             if (!lastHistoryItem || lastHistoryItem.id !== categoryId) {
+                  categoryHistory.push({ id: categoryId, name: categoryName });
+             }
+
+             updatePathDisplay();
+             updateBackButton();
+             categoriesListEl.innerHTML = ''; // Очищаем список категорий
+             fetchAds(categoryId); // Загружаем только объявления
+        }
+
+
+        function goBack() {
+            if (categoryHistory.length === 0) return; // Некуда возвращаться
+
+            categoryHistory.pop(); // Удаляем текущий уровень из истории
+
+            updatePathDisplay();
+            updateBackButton();
+
+            const parentCategory = categoryHistory[categoryHistory.length - 1];
+            const parentId = parentCategory ? parentCategory.id : null;
+
+            fetchCategories(parentId); // Загружаем категории родителя
+            if (parentId !== null) {
+                 fetchAds(parentId); // Загружаем объявления родителя
+            } else {
+                 adsListEl.innerHTML = ''; // В корне объявлений нет
+            }
+        }
+
+        function subscribeToCategory(categoryId) {
+             console.log(`Запрос подписки на категорию ${categoryId}`);
+             const dataToSend = {
+                 action: "subscribe",
+                 category_id: categoryId
+             };
+             tg.sendData(JSON.stringify(dataToSend));
+             // Можно добавить визуальный фидбек или закрытие окна
+             tg.HapticFeedback.notificationOccurred('success'); // Виброотклик
+        }
+
+        function viewAd(adId) {
+             console.log(`Запрос просмотра объявления ${adId}`);
+             const dataToSend = {
+                 action: "show_ad",
+                 ad_id: adId
+             };
+             tg.sendData(JSON.stringify(dataToSend));
+             // Обычно после этого закрываем WebApp
+             // tg.close();
+        }
+
+        // --- Инициализация ---
+        tg.ready(); // Сообщаем Telegram, что приложение готово
+        tg.expand(); // Растягиваем WebApp на весь экран
+
+        backButton.addEventListener('click', goBack);
+
+        // Загружаем категории верхнего уровня при старте
+        fetchCategories(null);
+
+    </script>
+
+</body>
+</html>
