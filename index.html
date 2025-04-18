@@ -138,24 +138,27 @@
                 console.log('[UI] Показ загрузки');
                 loadingEl.style.display = 'block';
                 errorEl.style.display = 'none'; // Скрываем ошибку при новой загрузке
-                // Не очищаем списки здесь, очистка происходит перед рендерингом
-                // categoriesListEl.innerHTML = '';
-                // adsListEl.innerHTML = '';
             }
 
             function hideLoading() {
-                 console.log('[UI] Скрытие загрузки');
-                loadingEl.style.display = 'none';
+                 console.log('[UI] Попытка скрыть загрузку'); // <<< Лог 1 (Добавлен)
+                 loadingEl.style.display = 'none';
+                 // Проверим стиль после установки
+                 console.log('[UI] Стиль display у loadingEl после скрытия:', loadingEl.style.display); // <<< Лог 2 (Добавлен)
             }
 
             function showError(message) {
-                console.log(`[UI] Показ ошибки: ${message}`);
+                // Используем версию, где сообщение об ошибке закомментировано для теста
+                console.log(`[UI] Показ ОШИБКИ (сообщение скрыто для теста): ${message}`);
                 hideLoading(); // Скрываем загрузку при ошибке
-                errorEl.textContent = `Ошибка: ${message}`;
-                errorEl.style.display = 'block';
-                 // Очищаем списки при ошибке, чтобы не показывать старые данные
-                 categoriesListEl.innerHTML = '';
-                 adsListEl.innerHTML = '';
+
+                // ЗАКОММЕНТИРОВАНО отображение ошибки на экране:
+                // errorEl.textContent = `Ошибка: ${message}`;
+                // errorEl.style.display = 'block';
+
+                // Очищаем списки при ошибке, чтобы не показывать старые данные
+                categoriesListEl.innerHTML = '';
+                adsListEl.innerHTML = '';
             }
 
             function renderCategories(categories) {
@@ -164,29 +167,26 @@
                     categoriesListEl.innerHTML = ''; // Очищаем перед рендером
                     if (!categories || categories.length === 0) {
                          console.log('[Render] Нет категорий для отображения.');
-                         // Добавляем сообщение только если мы не в корневой категории
                          if (categoryHistory.length > 0) {
                               const li = document.createElement('li');
-                              li.className = 'empty-list-message'; // Используем класс
+                              li.className = 'empty-list-message';
                               li.textContent = 'Подкатегорий нет';
                               categoriesListEl.appendChild(li);
                          }
-                         // Если и в корне нет категорий, тоже можно вывести сообщение
                          else {
                               const li = document.createElement('li');
                               li.className = 'empty-list-message';
                               li.textContent = 'Категорий пока нет.';
                               categoriesListEl.appendChild(li);
                          }
-                         return; // Выходим, если массив пуст
+                         return;
                     }
 
                     categories.forEach((cat, index) => {
                         console.log(`[Render] Рендеринг категории ${index}:`, cat);
-                        // Валидация объекта категории
                         if (typeof cat !== 'object' || cat === null || typeof cat.id === 'undefined' || typeof cat.name === 'undefined') {
                              console.error(`[Render] Некорректный объект категории на индексе ${index}:`, cat);
-                             return; // Пропускаем некорректный элемент (continue для forEach)
+                             return;
                         }
 
                         const li = document.createElement('li');
@@ -194,36 +194,31 @@
 
                         const nameSpan = document.createElement('span');
                         nameSpan.className = 'category-name';
-                        nameSpan.textContent = cat.name; // Используем имя как есть
+                        nameSpan.textContent = cat.name;
                         li.appendChild(nameSpan);
 
-                        // Кнопка подписки (добавляем перед стрелкой для лучшего вида)
                         const subscribeBtn = document.createElement('button');
-                        subscribeBtn.textContent = '🔔'; // Используем иконку
-                        subscribeBtn.title = `Подписаться на ${cat.name}`; // Всплывающая подсказка
+                        subscribeBtn.textContent = '🔔';
+                        subscribeBtn.title = `Подписаться на ${cat.name}`;
                         subscribeBtn.addEventListener('click', (event) => {
-                            event.stopPropagation(); // Предотвращаем клик по li
+                            event.stopPropagation();
                             console.log(`[Action] Клик Подписаться на категорию ${cat.id}`);
                             subscribeToCategory(cat.id);
                         });
                         li.appendChild(subscribeBtn);
 
-                        // Стрелка и обработчик навигации
                         if (cat.has_children) {
                             const arrowSpan = document.createElement('span');
                             arrowSpan.className = 'nav-arrow';
                             arrowSpan.textContent = '>';
                             li.appendChild(arrowSpan);
-                            // Обработчик на всю строку li (кроме кнопки)
                             li.addEventListener('click', (event) => {
-                                // Убедимся, что клик не был по кнопке внутри li
                                 if (event.target === li || event.target === nameSpan || event.target === arrowSpan) {
                                      console.log(`[Action] Клик Навигация в категорию ${cat.id}`);
                                      navigateToCategory(cat.id, cat.name);
                                 }
                             });
                         } else {
-                            // Если детей нет, клик по строке показывает объявления
                              li.addEventListener('click', (event) => {
                                 if (event.target === li || event.target === nameSpan) {
                                      console.log(`[Action] Клик Показ объявлений для категории ${cat.id}`);
@@ -244,7 +239,7 @@
             function renderAds(adsResponse) {
                  console.log('[Render] Начало renderAds с данными:', adsResponse);
                  try {
-                     adsListEl.innerHTML = ''; // Очищаем перед рендером
+                     adsListEl.innerHTML = '';
                      if (!adsResponse || !adsResponse.items || adsResponse.items.length === 0) {
                           console.log('[Render] Нет объявлений для отображения.');
                          const li = document.createElement('li');
@@ -258,7 +253,7 @@
                           console.log(`[Render] Рендеринг объявления ${index}:`, ad);
                           if (typeof ad !== 'object' || ad === null || typeof ad.id === 'undefined' || typeof ad.text_preview === 'undefined') {
                                 console.error(`[Render] Некорректный объект объявления на индексе ${index}:`, ad);
-                                return; // Пропускаем
+                                return;
                           }
 
                          const li = document.createElement('li');
@@ -266,20 +261,19 @@
 
                          const adDiv = document.createElement('div');
                          adDiv.style.flexGrow = '1';
-                         adDiv.style.marginRight = '10px'; // Отступ от кнопки
+                         adDiv.style.marginRight = '10px';
 
                          const textSpan = document.createElement('span');
                          textSpan.textContent = ad.text_preview;
                          if (ad.has_media) {
-                              textSpan.textContent += " 🖼️"; // Иконка, если есть медиа
+                              textSpan.textContent += " 🖼️";
                          }
                          adDiv.appendChild(textSpan);
 
                          li.appendChild(adDiv);
 
-                         // Кнопка просмотра
                          const viewBtn = document.createElement('button');
-                         viewBtn.textContent = '👁️'; // Иконка
+                         viewBtn.textContent = '👁️';
                          viewBtn.title = 'Смотреть объявление';
                          viewBtn.addEventListener('click', (event) => {
                             event.stopPropagation();
@@ -288,7 +282,6 @@
                          });
                          li.appendChild(viewBtn);
 
-                         // Клик по элементу списка для просмотра
                          li.addEventListener('click', (event) => {
                              if (event.target === li || event.target === adDiv || event.target === textSpan) {
                                  console.log(`[Action] Клик по элементу для просмотра объявления ${ad.id}`);
@@ -326,13 +319,13 @@
                         throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
                     }
 
-                    const responseClone = response.clone(); // Клонируем для возможного чтения текста при ошибке JSON
+                    const responseClone = response.clone();
 
                     try {
                         const categories = await response.json();
                         console.log('[API] Категории успешно распарсены:', categories);
-                        hideLoading(); // Скрываем загрузку только после успешного парсинга
-                        renderCategories(categories);
+                        hideLoading(); // Скрываем загрузку после успешного парсинга
+                        renderCategories(categories); // Вызываем рендер
                     } catch (jsonError) {
                          console.error('[API] Ошибка парсинга JSON категорий:', jsonError);
                          const responseText = await responseClone.text();
@@ -342,34 +335,28 @@
 
                 } catch (error) {
                     console.error('[API] Поймана ошибка в fetchCategories:', error);
+                    // Используем showError, которая теперь только логирует и очищает списки
                     showError(`Не удалось загрузить категории. ${error.message}`);
-                    // Не очищаем здесь, showError уже очищает
                 }
             }
 
             async function fetchAds(categoryId, page = 1, limit = 20) {
                  console.log(`[API] Запрос объявлений для categoryId: ${categoryId}, page: ${page}, limit: ${limit}`);
-                 // Очищаем только список объявлений перед показом загрузки
-                 adsListEl.innerHTML = '';
-                 showLoading(); // Показываем загрузку
+                 adsListEl.innerHTML = ''; // Очищаем старые объявления
+                 showLoading();
                  const url = `${apiBaseUrl}/api/categories/${categoryId}/ads?page=${page}&limit=${limit}`;
                  try {
                      const response = await fetch(url);
                      console.log(`[API] Ответ от ${url}: Статус ${response.status}`);
-
-                     // Клон для возможной отладки
                      const responseClone = response.clone();
 
                      if (!response.ok) {
-                         // Если 404 (страница не найдена), API вернет ошибку с деталями
                          let errorJson = null;
                          let errorText = response.statusText;
                          try { errorJson = await response.json(); errorText = errorJson.detail || errorText; } catch (e) {}
                          console.error(`[API] HTTP ошибка! Статус: ${response.status}, Детали: ${errorText}`);
-                         // Используем detail из JSON ответа, если есть
                          throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
                      }
-
 
                      try {
                          const adsResponse = await response.json();
@@ -385,6 +372,7 @@
 
                  } catch (error) {
                      console.error(`[API] Поймана ошибка в fetchAds для категории ${categoryId}:`, error);
+                      // Используем showError, которая теперь только логирует и очищает списки
                      showError(`Не удалось загрузить объявления. ${error.message}`);
                  }
             }
@@ -411,29 +399,25 @@
 
             function navigateToCategory(categoryId, categoryName) {
                  console.log(`[Nav] Переход в категорию: ${categoryId} (${categoryName})`);
-                 // Добавляем текущий уровень в историю
                  categoryHistory.push({ id: categoryId, name: categoryName });
                  updatePathDisplay();
                  updateBackButton();
-                 // Загружаем подкатегории И объявления для новой категории
-                 fetchCategories(categoryId); // Загружаем подкатегории
-                 fetchAds(categoryId);      // Загружаем объявления (1-я страница)
+                 fetchCategories(categoryId);
+                 fetchAds(categoryId);
             }
 
             function showAds(categoryId, categoryName) {
                  console.log(`[Nav] Показ объявлений для конечной категории: ${categoryId} (${categoryName})`);
-                 // Добавляем в историю, если еще не там
                  const lastHistoryItem = categoryHistory.length > 0 ? categoryHistory[categoryHistory.length - 1] : null;
                  if (!lastHistoryItem || lastHistoryItem.id !== categoryId) {
                       categoryHistory.push({ id: categoryId, name: categoryName });
                       console.log('[Nav] Категория добавлена в историю:', { id: categoryId, name: categoryName });
                  }
-
                  updatePathDisplay();
                  updateBackButton();
-                 categoriesListEl.innerHTML = ''; // Очищаем список категорий, т.к. дошли до конца ветки
-                 adsListEl.innerHTML = '';      // Очищаем старые объявления
-                 fetchAds(categoryId);          // Загружаем только объявления
+                 categoriesListEl.innerHTML = '';
+                 adsListEl.innerHTML = '';
+                 fetchAds(categoryId);
             }
 
 
@@ -443,25 +427,18 @@
                      console.log('[Nav] Некуда возвращаться.');
                      return;
                 }
-
-                categoryHistory.pop(); // Удаляем текущий уровень из истории
+                categoryHistory.pop();
                 console.log('[Nav] История после pop:', categoryHistory);
-
                 updatePathDisplay();
                 updateBackButton();
-
-                // Определяем ID родителя (или null для корня)
                 const parentCategory = categoryHistory.length > 0 ? categoryHistory[categoryHistory.length - 1] : null;
                 const parentId = parentCategory ? parentCategory.id : null;
                 console.log(`[Nav] Возврат к parentId: ${parentId}`);
-
-                fetchCategories(parentId); // Загружаем категории родителя (или корневые)
-
-                // Загружаем объявления родителя, если это не корень
+                fetchCategories(parentId);
                 if (parentId !== null) {
                      fetchAds(parentId);
                 } else {
-                     adsListEl.innerHTML = ''; // В корневой категории объявления не показываем
+                     adsListEl.innerHTML = '';
                 }
             }
 
@@ -474,10 +451,7 @@
                  const jsonData = JSON.stringify(dataToSend);
                  console.log(`[Send] Отправка данных боту: ${jsonData}`);
                  tg.sendData(jsonData);
-                 // Виброотклик для обратной связи
                  tg.HapticFeedback.notificationOccurred('success');
-                 // Можно показать временное сообщение
-                 // alert(`Запрос на подписку на категорию ${categoryId} отправлен!`);
             }
 
             function viewAd(adId) {
@@ -489,33 +463,22 @@
                  const jsonData = JSON.stringify(dataToSend);
                  console.log(`[Send] Отправка данных боту: ${jsonData}`);
                  tg.sendData(jsonData);
-                 // Закрывать окно не будем, пусть пользователь сам закроет или бот его перекроет
-                 // tg.close();
             }
 
             // --- Инициализация ---
             console.log('[INIT] Telegram Web App скрипт выполняется.');
-            tg.ready(); // Сообщаем Telegram, что приложение готово
+            tg.ready();
             console.log('[INIT] Telegram.WebApp.ready() вызван.');
-            // Запрашиваем подстройку цветов темы
-             tg.setHeaderColor('secondary_bg_color'); // Пример установки цвета хедера
-             // tg.setBackgroundColor(...); // Можно и фон
-
-            tg.expand(); // Растягиваем WebApp на весь экран
+            // tg.setHeaderColor('secondary_bg_color'); // Пока закомментировано
+            tg.expand();
             console.log('[INIT] Telegram.WebApp.expand() вызван.');
-
-            // Привязываем обработчик к кнопке Назад
             backButton.addEventListener('click', goBack);
             console.log('[INIT] Обработчик для кнопки Назад добавлен.');
-
-            // Загружаем категории верхнего уровня при старте
             console.log('[INIT] Запуск начальной загрузки категорий (parentId=null)...');
             fetchCategories(null);
 
         } catch(globalError) {
-            // Ловим ошибки, которые могли произойти до основной логики
             console.error("Глобальная ошибка инициализации Web App:", globalError);
-             // Показываем сообщение об ошибке пользователю
             const errorDiv = document.getElementById('error-message') || document.createElement('div');
             errorDiv.id = 'error-message';
             errorDiv.textContent = `Критическая ошибка при инициализации: ${globalError.message}. Попробуйте перезапустить Web App.`;
@@ -523,15 +486,12 @@
             errorDiv.style.color = 'red';
             errorDiv.style.padding = '20px';
             errorDiv.style.textAlign = 'center';
-             // Если элемент еще не в DOM, добавляем
              if (!document.getElementById('error-message')) {
-                 document.body.prepend(errorDiv); // Добавляем в начало body
+                 document.body.prepend(errorDiv);
              }
-             // Скрываем загрузку, если она была показана
              const loadingDiv = document.getElementById('loading');
              if(loadingDiv) loadingDiv.style.display = 'none';
         }
-
     </script>
 
 </body>
