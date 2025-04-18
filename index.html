@@ -27,9 +27,16 @@
             justify-content: space-between;
             align-items: center;
             min-height: 30px; /* Минимальная высота для удобства */
+
+            /* --- ВРЕМЕННЫЕ СТИЛИ ДЛЯ ТЕСТА ВИДИМОСТИ --- */
+            color: black !important;
+            background-color: lightyellow !important;
+            /* --- КОНЕЦ ВРЕМЕННЫХ СТИЛЕЙ --- */
         }
          #categories-list li:hover {
-             background-color: var(--tg-theme-secondary-bg-color);
+             /* Можно временно сделать ховер заметнее */
+             background-color: lightblue !important;
+             /* background-color: var(--tg-theme-secondary-bg-color); */
          }
         .category-name {
             flex-grow: 1;
@@ -81,6 +88,10 @@
              text-align: center;
              color: var(--tg-theme-hint-color);
              cursor: default;
+             /* Уберем временные цвета для этого элемента */
+             color: var(--tg-theme-hint-color) !important;
+             background-color: transparent !important;
+             border-bottom: none; /* Уберем границу у сообщения */
          }
     </style>
 </head>
@@ -141,10 +152,9 @@
             }
 
             function hideLoading() {
-                 console.log('[UI] Попытка скрыть загрузку'); // <<< Лог 1 (Добавлен)
+                 console.log('[UI] Попытка скрыть загрузку');
                  loadingEl.style.display = 'none';
-                 // Проверим стиль после установки
-                 console.log('[UI] Стиль display у loadingEl после скрытия:', loadingEl.style.display); // <<< Лог 2 (Добавлен)
+                 console.log('[UI] Стиль display у loadingEl после скрытия:', loadingEl.style.display);
             }
 
             function showError(message) {
@@ -324,8 +334,8 @@
                     try {
                         const categories = await response.json();
                         console.log('[API] Категории успешно распарсены:', categories);
-                        hideLoading(); // Скрываем загрузку после успешного парсинга
-                        renderCategories(categories); // Вызываем рендер
+                        hideLoading();
+                        renderCategories(categories);
                     } catch (jsonError) {
                          console.error('[API] Ошибка парсинга JSON категорий:', jsonError);
                          const responseText = await responseClone.text();
@@ -342,7 +352,7 @@
 
             async function fetchAds(categoryId, page = 1, limit = 20) {
                  console.log(`[API] Запрос объявлений для categoryId: ${categoryId}, page: ${page}, limit: ${limit}`);
-                 adsListEl.innerHTML = ''; // Очищаем старые объявления
+                 adsListEl.innerHTML = '';
                  showLoading();
                  const url = `${apiBaseUrl}/api/categories/${categoryId}/ads?page=${page}&limit=${limit}`;
                  try {
