@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Каталог Объявлений</title>
+    <title>Каталог Объявлений (Тест Текста Ответа)</title>
     <!-- Подключаем скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -22,16 +22,13 @@
         .empty-list-message { padding: 15px 5px; text-align: center; color: var(--tg-theme-hint-color, #888888); cursor: default; border-bottom: none; display: block; min-height: auto; }
         hr { border: none; border-top: 1px solid var(--tg-theme-hint-color, #dddddd); margin: 15px 0; }
         h2 { margin-top: 0; color: var(--tg-theme-text-color, #1c1c1c); }
-         /* Стили для пагинации */
          #pagination { text-align: center; padding: 15px 0; }
          #pagination button { margin: 0 5px; padding: 6px 10px; }
-         #pagination button:disabled { background-color: lightgray; cursor: default; opacity: 0.6; } /* Стиль для неактивной кнопки */
+         #pagination button:disabled { background-color: lightgray; cursor: default; opacity: 0.6; }
          #pagination span { margin: 0 10px; font-weight: bold; }
-         /* Стили для логов */
          #log-output { margin-top: 20px; border: 1px solid #ccc; padding: 5px; height: 150px; overflow-y: scroll; font-size: 0.8em; white-space: pre-wrap; background-color: #f8f8f8; color: #333; }
-         #log-output div { margin-bottom: 3px; padding-bottom: 3px; border-bottom: 1px dotted #eee; } /* Разделение строк лога */
+         #log-output div { margin-bottom: 3px; padding-bottom: 3px; border-bottom: 1px dotted #eee; }
          #log-output div:last-child { border-bottom: none; }
-
     </style>
 </head>
 <body>
@@ -45,15 +42,15 @@
     <ul id="categories-list"></ul>
     <hr>
     <ul id="ads-list"></ul>
-    <div id="pagination"></div> <!-- Контейнер для пагинации -->
-    <div id="log-output">Логи:</div> <!-- Блок для логов -->
+    <div id="pagination"></div>
+    <div id="log-output">Логи:</div>
 
 
     <script>
         // --- Глобальная функция логгирования ---
         const logOutputEl = document.getElementById('log-output');
         function log(message) {
-            console.log(message); // В консоль браузера
+            console.log(message);
             if (logOutputEl) {
                 try {
                     const now = new Date();
@@ -80,6 +77,7 @@
                 const apiBaseUrl = "https://a8d1-159-65-48-29.ngrok-free.app";
                 log(`API URL: ${apiBaseUrl}`);
 
+                // Поиск элементов
                 const categoriesListEl = document.getElementById('categories-list');
                 const adsListEl = document.getElementById('ads-list');
                 const currentPathEl = document.getElementById('current-path');
@@ -89,7 +87,6 @@
                 const paginationEl = document.getElementById('pagination');
 
                 if (!categoriesListEl || !adsListEl || !currentPathEl || !backButton || !loadingEl || !errorEl || !paginationEl) {
-                     log("КРИТИЧЕСКАЯ ОШИБКА: Не все DOM элементы найдены!");
                     throw new Error("Missing required DOM elements");
                 }
                 log("DOM элементы найдены.");
@@ -98,82 +95,82 @@
                 let currentPage = 1;
                 let currentCategoryId = null;
 
-                // --- Функции ---
+                // --- Функции UI ---
                 function showLoading() { log('[UI] Show Loading'); loadingEl.style.display = 'block'; errorEl.style.display = 'none'; }
                 function hideLoading() { log('[UI] Hide Loading'); loadingEl.style.display = 'none'; }
-                function showError(message) {
-                    log(`[UI] ОШИБКА: ${message}`); hideLoading();
-                    if (errorEl) { errorEl.textContent = `Ошибка: ${message}`; errorEl.style.display = 'block';}
-                    if (categoriesListEl) categoriesListEl.innerHTML = ''; if (adsListEl) adsListEl.innerHTML = ''; if (paginationEl) paginationEl.innerHTML = '';
-                }
+                function showError(message) { log(`[UI] ОШИБКА: ${message}`); hideLoading(); if (errorEl) { errorEl.textContent = `Ошибка: ${message}`; errorEl.style.display = 'block';} if (categoriesListEl) categoriesListEl.innerHTML = ''; if (adsListEl) adsListEl.innerHTML = ''; if (paginationEl) paginationEl.innerHTML = ''; }
 
-                function renderCategories(categories) {
-                    log(`[Render] renderCategories (${categories?.length ?? 0} шт.)`);
-                    try {
+                // --- Рендеринг (полные версии) ---
+                 function renderCategories(categories) {
+                     log(`[Render] renderCategories (${categories?.length ?? 0} шт.)`);
+                     try { /* ... (Полный код рендеринга категории) ... */
                         categoriesListEl.innerHTML = '';
-                        if (!categories || categories.length === 0) {
-                             const li=document.createElement('li'); li.className='empty-list-message'; li.textContent = categoryHistory.length>0?'Подкатегорий нет.':'Категорий пока нет.'; categoriesListEl.appendChild(li); return;
-                        }
-                        categories.forEach(cat => {
-                             if (typeof cat !== 'object' || cat === null || typeof cat.id === 'undefined' || typeof cat.name === 'undefined') return;
-                             const li = document.createElement('li'); li.dataset.categoryId = cat.id;
-                             const nameSpan = document.createElement('span'); nameSpan.className = 'category-name'; nameSpan.textContent = cat.name; li.appendChild(nameSpan);
-                             const btns = document.createElement('div'); btns.style.display='flex'; btns.style.alignItems='center';
-                             const btnSub = document.createElement('button'); btnSub.textContent='🔔'; btnSub.title=`Подписаться на ${cat.name}`; btnSub.addEventListener('click',(e)=>{ e.stopPropagation(); subscribeToCategory(cat.id); }); btns.appendChild(btnSub);
-                             if (cat.has_children) {
-                                 const arrow = document.createElement('span'); arrow.className='nav-arrow'; arrow.textContent='>'; btns.appendChild(arrow);
-                                 li.addEventListener('click',(e)=>{ if(e.target!==btnSub) navigateToCategory(cat.id,cat.name); });
-                             } else { li.addEventListener('click',(e)=>{ if(e.target!==btnSub) showAds(cat.id,cat.name); }); }
-                             li.appendChild(btns); categoriesListEl.appendChild(li);
-                        }); log('[Render] Категории отрисованы.');
-                    } catch (renderError) { log(`ОШИБКА в renderCategories: ${renderError.message}`); showError(`Ошибка отображения категорий: ${renderError.message}`); }
-                }
-                function renderAds(adsResponse) {
-                    log(`[Render] renderAds (items: ${adsResponse?.items?.length ?? 0})`);
-                    try {
+                        if (!categories || categories.length === 0) { const li=document.createElement('li'); li.className='empty-list-message'; li.textContent = categoryHistory.length>0?'Подкатегорий нет.':'Категорий пока нет.'; categoriesListEl.appendChild(li); return; }
+                        categories.forEach(cat => { if (typeof cat !== 'object' || cat === null || typeof cat.id==='undefined' || typeof cat.name==='undefined') return; const li=document.createElement('li'); li.dataset.categoryId = cat.id; const nameSpan=document.createElement('span'); nameSpan.className='category-name'; nameSpan.textContent=cat.name; li.appendChild(nameSpan); const btns=document.createElement('div'); btns.style.display='flex'; btns.style.alignItems='center'; const btnSub=document.createElement('button'); btnSub.textContent='🔔'; btnSub.title=`Подписаться на ${cat.name}`; btnSub.addEventListener('click',(e)=>{ e.stopPropagation(); subscribeToCategory(cat.id); }); btns.appendChild(btnSub); if (cat.has_children) { const arrow=document.createElement('span'); arrow.className='nav-arrow'; arrow.textContent='>'; btns.appendChild(arrow); li.addEventListener('click',(e)=>{ if(e.target!==btnSub) navigateToCategory(cat.id,cat.name); }); } else { li.addEventListener('click',(e)=>{ if(e.target!==btnSub) showAds(cat.id,cat.name); }); } li.appendChild(btns); categoriesListEl.appendChild(li); }); log('[Render] Категории отрисованы.');
+                     } catch (renderError) { log(`ОШИБКА в renderCategories: ${renderError.message}`); showError(`Ошибка отображения категорий: ${renderError.message}`); }
+                 }
+                 function renderAds(adsResponse) {
+                     log(`[Render] renderAds (items: ${adsResponse?.items?.length ?? 0})`);
+                     try { /* ... (Полный код рендеринга объявлений) ... */
                         adsListEl.innerHTML = '';
-                        if (!adsResponse || !adsResponse.items || adsResponse.items.length === 0) {
-                             const li=document.createElement('li'); li.className='empty-list-message'; li.textContent = 'Объявлений нет.'; adsListEl.appendChild(li); renderPagination(adsResponse); return;
-                        }
-                        adsResponse.items.forEach(ad => {
-                             if (typeof ad !== 'object' || ad === null || typeof ad.id === 'undefined' || typeof ad.text_preview === 'undefined') return;
-                             const li = document.createElement('li'); li.dataset.adId = ad.id;
-                             const adDiv = document.createElement('div'); adDiv.className='ad-preview'; adDiv.textContent=ad.text_preview; if(ad.has_media) adDiv.textContent+=" 🖼️"; li.appendChild(adDiv);
-                             const btnView = document.createElement('button'); btnView.textContent='👁️'; btnView.title='Смотреть'; btnView.addEventListener('click',(e)=>{ e.stopPropagation(); viewAd(ad.id); }); li.appendChild(btnView);
-                             li.addEventListener('click',(e)=>{ if(e.target !== btnView) viewAd(ad.id); }); adsListEl.appendChild(li);
-                        }); log('[Render] Объявления отрисованы.'); renderPagination(adsResponse);
-                    } catch (renderError) { log(`ОШИБКА в renderAds: ${renderError.message}`); showError(`Ошибка отображения объявлений: ${renderError.message}`); }
-                }
-                 function renderPagination(adsResponse) {
-                     paginationEl.innerHTML = ''; log(`[Pagination] Render: page=${adsResponse?.page}, total=${adsResponse?.total_pages}`);
-                     if (!adsResponse || adsResponse.total_pages <= 1) return;
-                     const current = adsResponse.page; const total = adsResponse.total_pages;
-                     const btnPrev = document.createElement('button'); btnPrev.textContent='⬅️ Пред.'; btnPrev.disabled = current <= 1;
-                     btnPrev.addEventListener('click', () => { if (current > 1 && currentCategoryId !== null) fetchAds(currentCategoryId, current - 1); }); paginationEl.appendChild(btnPrev);
-                     const info = document.createElement('span'); info.textContent = `${current} / ${total}`; paginationEl.appendChild(info);
-                     const btnNext = document.createElement('button'); btnNext.textContent='След. ➡️'; btnNext.disabled = current >= total;
-                     btnNext.addEventListener('click', () => { if (current < total && currentCategoryId !== null) fetchAds(currentCategoryId, current + 1); }); paginationEl.appendChild(btnNext);
-                     log('[Pagination] Пагинация отрисована.');
+                        if (!adsResponse || !adsResponse.items || adsResponse.items.length === 0) { const li=document.createElement('li'); li.className='empty-list-message'; li.textContent='Объявлений нет.'; adsListEl.appendChild(li); renderPagination(adsResponse); return; }
+                        adsResponse.items.forEach(ad => { if (typeof ad !== 'object' || ad === null || typeof ad.id==='undefined' || typeof ad.text_preview==='undefined') return; const li=document.createElement('li'); li.dataset.adId = ad.id; const adDiv=document.createElement('div'); adDiv.className='ad-preview'; adDiv.textContent=ad.text_preview; if(ad.has_media) adDiv.textContent+=" 🖼️"; li.appendChild(adDiv); const btnView=document.createElement('button'); btnView.textContent='👁️'; btnView.title='Смотреть'; btnView.addEventListener('click',(e)=>{ e.stopPropagation(); viewAd(ad.id); }); li.appendChild(btnView); li.addEventListener('click',(e)=>{ if(e.target !== btnView) viewAd(ad.id); }); adsListEl.appendChild(li); }); log('[Render] Объявления отрисованы.'); renderPagination(adsResponse);
+                     } catch (renderError) { log(`ОШИБКА в renderAds: ${renderError.message}`); showError(`Ошибка отображения объявлений: ${renderError.message}`); }
+                 }
+                 function renderPagination(adsResponse) { /* ... (Полный код рендеринга пагинации) ... */
+                    paginationEl.innerHTML = ''; log(`[Pagination] Render: page=${adsResponse?.page}, total=${adsResponse?.total_pages}`); if (!adsResponse || adsResponse.total_pages <= 1) return; const current=adsResponse.page; const total=adsResponse.total_pages; const btnPrev=document.createElement('button'); btnPrev.textContent='⬅️ Пред.'; btnPrev.disabled = current <= 1; btnPrev.addEventListener('click', () => { if (current > 1 && currentCategoryId !== null) fetchAds(currentCategoryId, current - 1); }); paginationEl.appendChild(btnPrev); const info=document.createElement('span'); info.textContent = `${current} / ${total}`; paginationEl.appendChild(info); const btnNext=document.createElement('button'); btnNext.textContent='След. ➡️'; btnNext.disabled = current >= total; btnNext.addEventListener('click', () => { if (current < total && currentCategoryId !== null) fetchAds(currentCategoryId, current + 1); }); paginationEl.appendChild(btnNext); log('[Pagination] Пагинация отрисована.');
                  }
 
-                // --- API ---
+                // --- ИЗМЕНЕННАЯ ФУНКЦИЯ API fetchCategories ---
                 async function fetchCategories(parentId = null) {
-                    log(`[API] fetchCategories parent: ${parentId}`); showLoading(); let url = `${apiBaseUrl}/api/categories`; if (parentId !== null) url += `?parent_id=${parentId}`;
-                    try { const r = await fetch(url); log(`[API] Categories status: ${r.status}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const d = await r.json(); hideLoading(); renderCategories(d);
-                    } catch (e) { log(`[API] fetchCategories ОШИБКА: ${e.message}`); showError(`Загрузка категорий: ${e.message}`); }
+                    log(`[API] fetchCategories parentId: ${parentId}`);
+                    showLoading();
+                    let url = `${apiBaseUrl}/api/categories`;
+                    if (parentId !== null) url += `?parent_id=${parentId}`;
+                    let responseText = ''; // Для хранения текста ответа
+                    try {
+                        const response = await fetch(url);
+                        log(`[API] Categories status: ${response.status}`);
+                        // ЧИТАЕМ ОТВЕТ КАК ТЕКСТ
+                        responseText = await response.text();
+                        log(`[API] Получен текст ответа (${responseText.length} байт): ${responseText.substring(0, 500)}...`); // Логируем начало
+
+                        if (!response.ok) {
+                            // Используем responseText в ошибке, если статус не ОК
+                            throw new Error(`HTTP ${response.status}: ${responseText}`);
+                        }
+
+                        // ПЫТАЕМСЯ ПАРСИТЬ ТЕКСТ КАК JSON
+                        try {
+                            const categories = JSON.parse(responseText);
+                            log('[API] Текст успешно распарсен как JSON.'); // Убрали вывод самих категорий
+                            hideLoading();
+                            renderCategories(categories);
+                        } catch (jsonError) {
+                             log(`[API] ОШИБКА парсинга JSON: ${jsonError.message}`);
+                             // responseText уже залогирован выше
+                             throw new Error(`Ответ сервера не валидный JSON. ${jsonError.message}`);
+                        }
+                    } catch (error) { // Ловим ошибки fetch или парсинга
+                        log(`[API] Поймана ошибка в fetchCategories: ${error.message}`);
+                        showError(`Не удалось загрузить категории: ${error.message}`);
+                    }
                 }
+                // --- КОНЕЦ ИЗМЕНЕННОЙ ФУНКЦИИ ---
+
+                // --- Функция API fetchAds (оставляем как была) ---
                 async function fetchAds(categoryId, page = 1, limit = 20) {
                      log(`[API] fetchAds cat: ${categoryId}, page: ${page}`); currentCategoryId=categoryId; currentPage=page; adsListEl.innerHTML=''; paginationEl.innerHTML=''; showLoading(); let url = `${apiBaseUrl}/api/categories/${categoryId}/ads?page=${page}&limit=${limit}`;
                      try { const r = await fetch(url); log(`[API] Ads status: ${r.status}`); if (!r.ok) { let txt=r.statusText; try{const j=await r.json();txt=j.detail||txt;}catch(e){} throw new Error(`HTTP ${r.status}: ${txt}`); } const d = await r.json(); hideLoading(); renderAds(d);
                      } catch (e) { log(`[API] fetchAds ОШИБКА: ${e.message}`); showError(`Загрузка объявлений: ${e.message}`); }
                 }
 
-                // --- Навигация и действия ---
+                // --- Навигация и действия (без изменений) ---
                  function updateBackButton() { backButton.style.display = categoryHistory.length > 0 ? 'inline-block' : 'none'; }
                  function updatePathDisplay() { currentPathEl.textContent = categoryHistory.length === 0 ? "Каталог" : "Каталог / " + categoryHistory.map(item => item.name).join(" / "); }
                  function navigateToCategory(id, name) { log(`[Nav] > ${id}`); categoryHistory.push({id,name}); updatePathDisplay(); updateBackButton(); fetchCategories(id); fetchAds(id, 1); }
                  function showAds(id, name) { log(`[Nav] Ads ${id}`); const last=categoryHistory.length>0?categoryHistory[categoryHistory.length-1]:null; if(!last||last.id!==id) categoryHistory.push({id,name}); updatePathDisplay(); updateBackButton(); categoriesListEl.innerHTML='<li class="empty-list-message">Объявления:</li>'; adsListEl.innerHTML=''; paginationEl.innerHTML=''; fetchAds(id, 1); }
-                 function goBack() { log('[Nav] Back'); if (categoryHistory.length === 0) return; categoryHistory.pop(); updatePathDisplay(); updateBackButton(); const parent=categoryHistory.length>0?categoryHistory[categoryHistory.length-1]:null; const parentId=parent?parent.id:null; log(`[Nav] Back to: ${parentId}`); fetchCategories(parentId); if(parentId !== null) fetchAds(parentId, 1); else { adsListEl.innerHTML=''; paginationEl.innerHTML=''; currentCategoryId=null;} }
+                 function goBack() { log('[Nav] Back'); if (categoryHistory.length === 0) return; categoryHistory.pop(); updatePathDisplay(); updateBackButton(); const parent=categoryHistory.length>0?categoryHistory[categoryHistory.length-1]:null; const parentId=parent?parent.id:null; log(`[Nav] Back to parentId: ${parentId}`); fetchCategories(parentId); if(parentId !== null) fetchAds(parentId, 1); else { adsListEl.innerHTML=''; paginationEl.innerHTML=''; currentCategoryId=null;} }
                  function subscribeToCategory(id) { log(`[Send] Subscribe: ${id}`); tg.sendData(JSON.stringify({action:"subscribe",category_id:id})); tg.HapticFeedback.notificationOccurred('success'); }
                  function viewAd(id) { log(`[Send] View Ad: ${id}`); tg.sendData(JSON.stringify({action:"show_ad",ad_id:id})); }
 
@@ -186,13 +183,10 @@
                 fetchCategories(null);
 
             } catch(globalError) {
-                 // Используем log для вывода глобальной ошибки
-                 log(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
-                 // alert(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
-                 const errorDiv = document.getElementById('error-message'); if(errorDiv) { errorDiv.textContent = `Глобальная ошибка: ${globalError.message}.`; errorDiv.style.display='block'; }
-                 const loadingDiv = document.getElementById('loading'); if(loadingDiv) loadingDiv.style.display='none';
-                 const catList = document.getElementById('categories-list'); if(catList) catList.innerHTML='';
-                 console.error("Глобальная ошибка:", globalError); // Дублируем в консоль
+                log(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
+                alert(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
+                document.body.innerHTML = `<div style="color: red; padding: 20px;">Глобальная ошибка: ${globalError.message}</div>`;
+                console.error("Глобальная ошибка:", globalError);
             }
         });
     </script>
