@@ -3,343 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Каталог Объявлений</title>
+    <title>Каталог Объявлений (Тест JS Render)</title>
     <!-- Подключаем скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* --- Стили с решением проблемы цветов --- */
+        /* Стили оставляем с временными цветами для li */
         body {
             font-family: sans-serif;
             padding: 10px;
-            margin: 0;
-            /* Задаем СВОИ базовые цвета для гарантии читаемости */
-            color: #1c1c1c; /* Почти черный */
-            background-color: #ffffff; /* Белый */
+            color: var(--tg-theme-text-color);
+            background-color: var(--tg-theme-bg-color);
         }
         #categories-list, #ads-list {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0;
+            list-style: none; padding: 0; margin: 10px 0;
         }
         #categories-list li, #ads-list li {
             padding: 8px 5px;
-            /* Используем цвет подсказки из темы для рамки, с запасным вариантом */
-            border-bottom: 1px solid var(--tg-theme-hint-color, #dddddd);
+            border-bottom: 1px solid black; /* Явная граница */
             cursor: pointer;
-            display: flex;
+            display: flex; /* Оставим flex для базового выравнивания */
             justify-content: space-between;
             align-items: center;
             min-height: 30px;
-             /* Цвет текста будет унаследован от body (почти черный) */
-             /* Фон будет унаследован от body (белый) */
+            color: black !important; /* Тестовый цвет текста */
+            background-color: lightyellow !important; /* Тестовый цвет фона */
+            margin: 5px 0;
         }
-         #categories-list li:hover {
-             /* Используем вторичный цвет фона из темы для ховера, с запасным */
-             background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-         }
-        .category-name {
-            flex-grow: 1;
-            margin-right: 10px;
-        }
-        .nav-arrow {
-             /* Цвет стрелки берем из темы, с запасным */
-             color: var(--tg-theme-hint-color, #888888);
-             font-weight: bold;
-             margin-left: 5px;
-        }
-        .ad-preview { /* Стиль для текста объявления в списке */
-            /* Можно унаследовать цвет от li или задать свой */
-             font-size: 0.95em; /* Чуть крупнее */
-             white-space: nowrap;
-             overflow: hidden;
-             text-overflow: ellipsis;
-             flex-grow: 1; /* Чтобы занимал доступное место */
-             margin-right: 10px;
-        }
-        button {
-            padding: 5px 8px;
-            margin-left: 5px;
-            /* Цвета кнопки берем из темы, с запасными */
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            flex-shrink: 0; /* Предотвращаем сжатие */
-        }
-        #back-button {
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            /* Можно использовать цвета кнопки из темы */
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 4px;
-        }
-        #loading {
-            text-align: center;
-            padding: 20px;
-             /* Цвет текста загрузки из темы, с запасным */
-            color: var(--tg-theme-hint-color, #888888);
-            display: none;
-        }
-         #error-message {
-             text-align: center;
-             padding: 20px;
-              /* Цвет ошибки из темы, с запасным красным */
-             color: var(--tg-theme-destructive-text-color, red);
-             font-weight: bold;
-             display: none;
-         }
-         .empty-list-message {
-             padding: 15px 5px;
-             text-align: center;
-             /* Цвет сообщения из темы, с запасным */
-             color: var(--tg-theme-hint-color, #888888);
-             cursor: default;
-             border-bottom: none; /* Убираем рамку */
-             /* Убираем flex свойства */
-             display: block;
-             min-height: auto;
-         }
-         /* Стиль для разделителя */
-         hr {
-            border: none;
-            border-top: 1px solid var(--tg-theme-hint-color, #dddddd);
-            margin: 15px 0; /* Увеличим отступы */
-         }
-         /* Стили для заголовка */
-         h2 {
-             margin-top: 0; /* Уберем верхний отступ у заголовка */
-             color: var(--tg-theme-text-color, #1c1c1c); /* Цвет заголовка тоже можно из темы брать */
-         }
+        .category-name { flex-grow: 1; margin-right: 10px; }
+        /* Остальные стили (кнопки, стрелки и т.д.) пока не важны */
+        button { display: none; } /* Скроем кнопки на время теста */
+        .nav-arrow { display: none; } /* Скроем стрелки */
+        #back-button, #loading, #error-message { display: none; }
+        .empty-list-message { padding: 15px 5px; text-align: center; color: gray; }
     </style>
 </head>
 <body>
 
-    <h2 id="current-path">Каталог</h2>
-    <button id="back-button" style="display: none;">⬅️ Назад</button>
-
+    <h2 id="current-path">Каталог (Тест JS Render)</h2>
+    <button id="back-button">⬅️ Назад</button> <!-- Оставляем, но скрыт стилями -->
     <div id="loading">Загрузка...</div>
     <div id="error-message"></div>
 
     <ul id="categories-list">
-        <!-- Сюда JS будет добавлять элементы категорий -->
+        <!-- Сюда JS будет добавлять элементы -->
     </ul>
+    <hr style="border: none; border-top: 1px solid black; margin: 10px 0;">
+    <ul id="ads-list"></ul>
 
-    <hr> <!-- Горизонтальная линия-разделитель -->
-
-    <ul id="ads-list">
-        <!-- Сюда JS будет добавлять элементы объявлений -->
-    </ul>
-
+    <!-- Раскомментируем скрипт -->
     <script>
         try {
             const tg = window.Telegram.WebApp;
             if (!tg) throw new Error("Telegram.WebApp not found");
 
-            // --- ВАЖНО: УСТАНОВИТЕ ПРАВИЛЬНЫЙ URL API! ---
-            // Либо http://127.0.0.1:8000 (для тестов в Telegram Desktop/Web на том же ПК)
-            // Либо HTTPS URL от ngrok (https://....ngrok-free.app) (для тестов с телефона или если localhost не работает)
-            const apiBaseUrl = "http://127.0.0.1:8000"; // <<<--- ПРОВЕРЬТЕ И ИЗМЕНИТЕ ПРИ НЕОБХОДИМОСТИ!
+            const apiBaseUrl = "http://127.0.0.1:8000"; // Убедитесь, что API запущен здесь ИЛИ используйте URL ngrok
             console.log(`[INIT] API Base URL: ${apiBaseUrl}`);
 
             const categoriesListEl = document.getElementById('categories-list');
-            const adsListEl = document.getElementById('ads-list');
-            const currentPathEl = document.getElementById('current-path');
-            const backButton = document.getElementById('back-button');
+            // Другие элементы пока не используем активно
+            // const adsListEl = document.getElementById('ads-list');
+            // const currentPathEl = document.getElementById('current-path');
+            // const backButton = document.getElementById('back-button');
             const loadingEl = document.getElementById('loading');
             const errorEl = document.getElementById('error-message');
 
-            if (!categoriesListEl || !adsListEl || !currentPathEl || !backButton || !loadingEl || !errorEl) {
-                throw new Error("Missing required DOM elements");
-            }
+            if (!categoriesListEl || !loadingEl || !errorEl) throw new Error("Missing required DOM elements");
 
-            let categoryHistory = []; // Стек для хранения пути навигации [{id, name}]
+            // --- Упрощенные функции ---
 
-            // --- Функции отображения ---
             function showLoading() {
-                console.log('[UI] Show Loading');
+                console.log('[UI] Показ загрузки');
                 loadingEl.style.display = 'block';
                 errorEl.style.display = 'none';
             }
+
             function hideLoading() {
-                 console.log('[UI] Hide Loading');
+                 console.log('[UI] Скрытие загрузки');
                  loadingEl.style.display = 'none';
             }
+
             function showError(message) {
+                 // Пока не показываем ошибку пользователю
                  console.error(`[UI] ОШИБКА: ${message}`);
                  hideLoading();
-                 errorEl.textContent = `Ошибка: ${message}`; // Показываем ошибку
-                 errorEl.style.display = 'block';
-                 // Очищаем списки
-                 categoriesListEl.innerHTML = '';
-                 adsListEl.innerHTML = '';
+                 categoriesListEl.innerHTML = `<li class="empty-list-message">Ошибка загрузки: ${message}</li>`; // Выводим ошибку в список
+                 // adsListEl.innerHTML = '';
             }
 
-            // --- ПОЛНАЯ функция рендеринга категорий ---
+            // --- УПРОЩЕННАЯ ФУНКЦИЯ РЕНДЕРИНГА ---
             function renderCategories(categories) {
-                console.log('[Render] Начало renderCategories с данными:', categories);
+                console.log('[Render] Начало УПРОЩЕННОГО renderCategories с данными:', categories);
                 try {
-                    categoriesListEl.innerHTML = ''; // Очищаем перед рендерингом
+                    if (!categoriesListEl) {
+                        console.error('[Render] ОШИБКА: categoriesListEl не найден!');
+                        return;
+                    }
+                    categoriesListEl.innerHTML = ''; // Очищаем
                     if (!categories || categories.length === 0) {
                          console.log('[Render] Нет категорий для отображения.');
-                         const li = document.createElement('li');
-                         li.className = 'empty-list-message';
-                         li.textContent = categoryHistory.length > 0 ? 'Подкатегорий нет.' : 'Категорий пока нет.';
-                         categoriesListEl.appendChild(li);
+                         categoriesListEl.innerHTML = '<li class="empty-list-message">Категорий нет.</li>';
                          return;
                     }
 
                     categories.forEach((cat, index) => {
-                        console.log(`[Render] Рендеринг категории ${index}:`, cat);
+                        console.log(`[Render] Обработка категории ${index}:`, cat);
                         if (typeof cat !== 'object' || cat === null || typeof cat.id === 'undefined' || typeof cat.name === 'undefined') {
-                             console.warn(`[Render] Пропуск некорректного объекта категории ${index}:`, cat);
+                             console.error(`[Render] Пропуск некорректного объекта категории ${index}:`, cat);
                              return;
                         }
 
+                        // 1. Создаем li
                         const li = document.createElement('li');
-                        li.dataset.categoryId = cat.id; // Сохраняем ID
+                        console.log(`[Render]   ${index}: Создан li`);
 
+                        // 2. Создаем span
                         const nameSpan = document.createElement('span');
                         nameSpan.className = 'category-name';
-                        nameSpan.textContent = cat.name; // Отображаем имя
+                        nameSpan.textContent = cat.name + " (JS)"; // Добавим маркер, что это из JS
+                        console.log(`[Render]   ${index}: Создан span с текстом: ${nameSpan.textContent}`);
+
+                        // 3. Добавляем span в li
                         li.appendChild(nameSpan);
+                        console.log(`[Render]   ${index}: Span добавлен в li`);
 
-                        // Создаем контейнер для кнопок справа
-                        const buttonsDiv = document.createElement('div');
-                        buttonsDiv.style.display = 'flex'; // Чтобы кнопки были в строку
-                        buttonsDiv.style.alignItems = 'center';
-
-                        const subscribeBtn = document.createElement('button');
-                        subscribeBtn.textContent = '🔔'; // Иконка подписки
-                        subscribeBtn.title = `Подписаться на ${cat.name}`; // Подсказка
-                        subscribeBtn.addEventListener('click', (event) => {
-                            event.stopPropagation(); // Остановить всплытие клика к li
-                            console.log(`[Action] Клик Подписаться на категорию ${cat.id}`);
-                            subscribeToCategory(cat.id);
-                        });
-                        buttonsDiv.appendChild(subscribeBtn); // Добавляем кнопку в контейнер
-
-                        // Если есть дочерние категории, добавляем стрелку и вешаем обработчик навигации на li
-                        if (cat.has_children) {
-                            const arrowSpan = document.createElement('span');
-                            arrowSpan.className = 'nav-arrow';
-                            arrowSpan.textContent = '>';
-                            buttonsDiv.appendChild(arrowSpan); // Добавляем стрелку в контейнер
-
-                            li.addEventListener('click', (event) => {
-                                // Реагируем на клик только если он не был по кнопке внутри
-                                if (event.target !== subscribeBtn) {
-                                     console.log(`[Action] Клик Навигация в категорию ${cat.id}`);
-                                     navigateToCategory(cat.id, cat.name);
-                                }
-                            });
-                        }
-                        // Если нет дочерних категорий, вешаем обработчик показа объявлений на li
-                        else {
-                             li.addEventListener('click', (event) => {
-                                 if (event.target !== subscribeBtn) {
-                                     console.log(`[Action] Клик Показ объявлений для категории ${cat.id}`);
-                                     showAds(cat.id, cat.name);
-                                 }
-                            });
-                        }
-
-                        li.appendChild(buttonsDiv); // Добавляем контейнер с кнопками/стрелкой в li
-                        categoriesListEl.appendChild(li); // Добавляем li в основной список
+                        // 4. Добавляем li в основной список ul
+                        categoriesListEl.appendChild(li);
+                        console.log(`[Render]   ${index}: Li добавлен в categoriesListEl`);
                     });
-                    console.log('[Render] Рендеринг категорий завершен.');
+                    console.log('[Render] УПРОЩЕННЫЙ Рендеринг категорий завершен.');
                 } catch (renderError) {
-                     console.error('[Render] Ошибка внутри renderCategories:', renderError);
+                     console.error('[Render] Ошибка внутри УПРОЩЕННОГО renderCategories:', renderError);
                      showError(`Ошибка отображения категорий. ${renderError.message}`);
                 }
             }
-            // --- КОНЕЦ ПОЛНОЙ ФУНКЦИИ РЕНДЕРИНГА КАТЕГОРИЙ ---
+            // --- КОНЕЦ УПРОЩЕННОЙ ФУНКЦИИ РЕНДЕРИНГА ---
 
-            // --- Функция рендеринга объявлений ---
-             function renderAds(adsResponse) {
-                 console.log('[Render] Начало renderAds с данными:', adsResponse);
-                 try {
-                     adsListEl.innerHTML = ''; // Очищаем перед рендером
-                     if (!adsResponse || !adsResponse.items || adsResponse.items.length === 0) {
-                          console.log('[Render] Нет объявлений для отображения.');
-                         const li = document.createElement('li');
-                         li.className = 'empty-list-message';
-                         li.textContent = 'Объявлений в этой категории нет.';
-                         adsListEl.appendChild(li);
-                         return;
-                     }
-
-                     adsResponse.items.forEach((ad, index) => {
-                          console.log(`[Render] Рендеринг объявления ${index}:`, ad);
-                          if (typeof ad !== 'object' || ad === null || typeof ad.id === 'undefined' || typeof ad.text_preview === 'undefined') {
-                                console.warn(`[Render] Пропуск некорректного объекта объявления ${index}:`, ad);
-                                return;
-                          }
-
-                         const li = document.createElement('li');
-                         li.dataset.adId = ad.id;
-
-                         // Используем класс ad-preview для текста
-                         const adDiv = document.createElement('div');
-                         adDiv.className = 'ad-preview'; // Применяем стиль
-                         adDiv.textContent = ad.text_preview;
-                         if (ad.has_media) {
-                              adDiv.textContent += " 🖼️"; // Добавляем иконку
-                         }
-                         li.appendChild(adDiv);
-
-                         const viewBtn = document.createElement('button');
-                         viewBtn.textContent = '👁️'; // Иконка просмотра
-                         viewBtn.title = 'Смотреть объявление';
-                         viewBtn.addEventListener('click', (event) => {
-                            event.stopPropagation();
-                            console.log(`[Action] Клик Смотреть объявление ${ad.id}`);
-                            viewAd(ad.id);
-                         });
-                         li.appendChild(viewBtn); // Добавляем кнопку просмотра
-
-                         // Вешаем обработчик на всю строку li
-                         li.addEventListener('click', (event) => {
-                             if (event.target !== viewBtn) { // Клик не по кнопке
-                                 console.log(`[Action] Клик по элементу для просмотра объявления ${ad.id}`);
-                                 viewAd(ad.id);
-                             }
-                         });
-
-                         adsListEl.appendChild(li);
-                     });
-                     console.log('[Render] Рендеринг объявлений завершен.');
-                     // TODO: Добавить логику отрисовки кнопок пагинации здесь
-                     renderPagination(adsResponse); // Вызываем функцию отрисовки пагинации
-
-                 } catch (renderError) {
-                     console.error('[Render] Ошибка внутри renderAds:', renderError);
-                     showError(`Ошибка отображения объявлений. ${renderError.message}`);
-                 }
-            }
-            // --- КОНЕЦ ФУНКЦИИ РЕНДЕРИНГА ОБЪЯВЛЕНИЙ ---
-
-             // --- Функция рендеринга пагинации (простая) ---
-             function renderPagination(adsResponse) {
-                 // TODO: Реализовать кнопки "Назад" / "Вперед" или номера страниц
-                 console.log(`[Pagination] Данные для пагинации: page=${adsResponse.page}, total_pages=${adsResponse.total_pages}`);
-                 // Пока просто выводим информацию
-                 if (adsResponse.total_pages > 1) {
-                     const paginationDiv = document.createElement('div');
-                     paginationDiv.style.textAlign = 'center';
-                     paginationDiv.style.padding = '10px';
-                     paginationDiv.textContent = `Страница ${adsResponse.page} из ${adsResponse.total_pages}`;
-                     // Добавляем после списка объявлений
-                     adsListEl.insertAdjacentElement('afterend', paginationDiv);
-                 }
-             }
-             // --- Конец функции пагинации ---
-
-
-            // --- Функции взаимодействия с API ---
-            async function fetchCategories(parentId = null) {
+            // --- Функция запроса (оставляем как была, с отладкой) ---
+             async function fetchCategories(parentId = null) {
                 console.log(`[API] Запрос категорий для parentId: ${parentId}`);
                 showLoading();
                 let url = `${apiBaseUrl}/api/categories`;
@@ -360,7 +160,7 @@
                         const categories = await response.json();
                         console.log('[API] Категории успешно распарсены:', categories);
                         hideLoading();
-                        renderCategories(categories);
+                        renderCategories(categories); // Вызываем УПРОЩЕННЫЙ рендер
                     } catch (jsonError) {
                          console.error('[API] Ошибка парсинга JSON категорий:', jsonError);
                          const responseText = await responseClone.text();
@@ -373,102 +173,16 @@
                 }
             }
 
-            async function fetchAds(categoryId, page = 1, limit = 20) {
-                 console.log(`[API] Запрос объявлений для categoryId: ${categoryId}, page: ${page}, limit: ${limit}`);
-                 adsListEl.innerHTML = ''; // Очищаем перед запросом
-                  // Удаляем старую пагинацию, если она была
-                 const oldPagination = document.querySelector('#ads-list + div');
-                 if (oldPagination) oldPagination.remove();
-
-                 showLoading();
-                 const url = `${apiBaseUrl}/api/categories/${categoryId}/ads?page=${page}&limit=${limit}`;
-                 try {
-                     const response = await fetch(url);
-                     console.log(`[API] Ответ от ${url}: Статус ${response.status}`);
-                     const responseClone = response.clone();
-                     if (!response.ok) {
-                         let errorJson = null;
-                         let errorText = response.statusText;
-                         try { errorJson = await response.json(); errorText = errorJson.detail || errorText; } catch (e) {}
-                         console.error(`[API] HTTP ошибка! Статус: ${response.status}, Детали: ${errorText}`);
-                         throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
-                     }
-                     try {
-                         const adsResponse = await response.json();
-                         console.log('[API] Объявления успешно распарсены:', adsResponse);
-                         hideLoading();
-                         renderAds(adsResponse); // Включает вызов renderPagination
-                     } catch (jsonError) {
-                          console.error('[API] Ошибка парсинга JSON объявлений:', jsonError);
-                          const responseText = await responseClone.text();
-                          console.error('[API] Тело ответа, вызвавшее ошибку JSON:', responseText);
-                          throw new Error(`Ошибка обработки ответа сервера (не JSON?). ${jsonError.message}`);
-                     }
-                 } catch (error) {
-                     console.error(`[API] Поймана ошибка в fetchAds для категории ${categoryId}:`, error);
-                     showError(`Не удалось загрузить объявления. ${error.message}`);
-                 }
-            }
-
-            // --- Функции навигации и действий ---
-             function updateBackButton() {
-                backButton.style.display = categoryHistory.length > 0 ? 'inline-block' : 'none';
-                 console.log('[UI] Обновлена кнопка Назад, видимость:', backButton.style.display);
-            }
-            function updatePathDisplay() {
-                 currentPathEl.textContent = categoryHistory.length === 0
-                    ? "Каталог"
-                    : "Каталог / " + categoryHistory.map(item => item.name).join(" / ");
-                 console.log(`[UI] Обновлен путь: ${currentPathEl.textContent}`);
-            }
-            function navigateToCategory(categoryId, categoryName) {
-                 console.log(`[Nav] Переход в категорию: ${categoryId} (${categoryName})`);
-                 categoryHistory.push({ id: categoryId, name: categoryName });
-                 updatePathDisplay();
-                 updateBackButton();
-                 fetchCategories(categoryId); // Загружаем подкатегории
-                 fetchAds(categoryId);      // Загружаем объявления (1-я стр)
-            }
-            function showAds(categoryId, categoryName) {
-                 console.log(`[Nav] Показ объявлений для конечной категории: ${categoryId} (${categoryName})`);
-                 const lastHistoryItem = categoryHistory.length > 0 ? categoryHistory[categoryHistory.length - 1] : null;
-                 if (!lastHistoryItem || lastHistoryItem.id !== categoryId) {
-                      categoryHistory.push({ id: categoryId, name: categoryName });
-                 }
-                 updatePathDisplay();
-                 updateBackButton();
-                 categoriesListEl.innerHTML = '<li class="empty-list-message">Выберите объявление ниже.</li>'; // Сообщение вместо списка подкатегорий
-                 adsListEl.innerHTML = ''; // Очищаем перед загрузкой
-                  // Удаляем старую пагинацию
-                 const oldPagination = document.querySelector('#ads-list + div');
-                 if (oldPagination) oldPagination.remove();
-                 fetchAds(categoryId); // Загружаем только объявления
-            }
-            function goBack() {
-                console.log('[Nav] Нажата кнопка Назад');
-                if (categoryHistory.length === 0) return;
-                categoryHistory.pop();
-                updatePathDisplay();
-                updateBackButton();
-                const parentCategory = categoryHistory.length > 0 ? categoryHistory[categoryHistory.length - 1] : null;
-                const parentId = parentCategory ? parentCategory.id : null;
-                console.log(`[Nav] Возврат к parentId: ${parentId}`);
-                fetchCategories(parentId);
-                if (parentId !== null) fetchAds(parentId);
-                else adsListEl.innerHTML = ''; // Очищаем объявления в корне
-                 // Удаляем пагинацию при возврате
-                 const oldPagination = document.querySelector('#ads-list + div');
-                 if (oldPagination) oldPagination.remove();
-            }
-            function subscribeToCategory(categoryId) {
-                 console.log(`[Send] Запрос подписки на категорию ${categoryId}`);
-                 tg.sendData(JSON.stringify({ action: "subscribe", category_id: categoryId }));
-                 tg.HapticFeedback.notificationOccurred('success');
-            }
-            function viewAd(adId) {
-                 console.log(`[Send] Запрос просмотра объявления ${adId}`);
-                 tg.sendData(JSON.stringify({ action: "show_ad", ad_id: adId }));
-            }
+            // --- Остальные функции (навигация, ads и т.д.) пока не нужны ---
+            // function renderAds(...) {}
+            // async function fetchAds(...) {}
+            // function updateBackButton() {}
+            // function updatePathDisplay() {}
+            // function navigateToCategory(...) {}
+            // function showAds(...) {}
+            // function goBack() {}
+            // function subscribeToCategory(...) {}
+            // function viewAd(...) {}
 
             // --- Инициализация ---
             console.log('[INIT] Telegram Web App скрипт выполняется.');
@@ -476,20 +190,14 @@
             console.log('[INIT] Telegram.WebApp.ready() вызван.');
             tg.expand();
             console.log('[INIT] Telegram.WebApp.expand() вызван.');
-            backButton.addEventListener('click', goBack);
-            console.log('[INIT] Обработчик для кнопки Назад добавлен.');
+            // backButton.addEventListener('click', goBack); // Кнопка "Назад" пока не нужна
             console.log('[INIT] Запуск начальной загрузки категорий (parentId=null)...');
-            fetchCategories(null);
+            fetchCategories(null); // Запускаем загрузку
 
         } catch(globalError) {
             console.error("Глобальная ошибка инициализации Web App:", globalError);
-            const errorDiv = document.getElementById('error-message');
-             if(errorDiv) {
-                errorDiv.textContent = `Критическая ошибка при инициализации: ${globalError.message}. Попробуйте перезапустить Web App.`;
-                errorDiv.style.display = 'block';
-             }
-             const loadingDiv = document.getElementById('loading');
-             if(loadingDiv) loadingDiv.style.display = 'none';
+            const errorDiv = document.getElementById('error-message') || document.createElement('div');
+            // ... код отображения глобальной ошибки ...
         }
     </script>
 
