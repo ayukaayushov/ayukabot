@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Каталог Объявлений (Тест JS Render)</title>
+    <title>Каталог (Тест Синхронного Рендера)</title>
     <!-- Подключаем скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -13,193 +13,138 @@
             padding: 10px;
             color: var(--tg-theme-text-color);
             background-color: var(--tg-theme-bg-color);
+            margin: 0;
         }
         #categories-list, #ads-list {
             list-style: none; padding: 0; margin: 10px 0;
         }
         #categories-list li, #ads-list li {
             padding: 8px 5px;
-            border-bottom: 1px solid black; /* Явная граница */
+            border-bottom: 1px solid black;
             cursor: pointer;
-            display: flex; /* Оставим flex для базового выравнивания */
-            justify-content: space-between;
-            align-items: center;
+            display: block; /* Упрощенный display */
             min-height: 30px;
             color: black !important; /* Тестовый цвет текста */
             background-color: lightyellow !important; /* Тестовый цвет фона */
             margin: 5px 0;
         }
-        .category-name { flex-grow: 1; margin-right: 10px; }
-        /* Остальные стили (кнопки, стрелки и т.д.) пока не важны */
-        button { display: none; } /* Скроем кнопки на время теста */
-        .nav-arrow { display: none; } /* Скроем стрелки */
+        .category-name { /* Этот класс не используется в упрощенном рендере */ }
+        button { display: none; }
+        .nav-arrow { display: none; }
         #back-button, #loading, #error-message { display: none; }
         .empty-list-message { padding: 15px 5px; text-align: center; color: gray; }
+        #log-output { margin-top: 10px; border: 1px solid #ccc; padding: 5px; height: 200px; overflow-y: scroll; font-size: 0.8em; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-    <h2 id="current-path">Каталог (Тест JS Render)</h2>
-    <button id="back-button">⬅️ Назад</button> <!-- Оставляем, но скрыт стилями -->
+    <h2 id="current-path">Каталог (Тест Синхронного Рендера)</h2>
+    <button id="back-button">⬅️ Назад</button>
     <div id="loading">Загрузка...</div>
     <div id="error-message"></div>
 
     <ul id="categories-list">
-        <!-- Сюда JS будет добавлять элементы -->
+        <!-- Сюда JS будет добавлять элементы СИНХРОННО -->
     </ul>
-    <hr style="border: none; border-top: 1px solid black; margin: 10px 0;">
-    <ul id="ads-list"></ul>
+    <div id="log-output">Логи:</div>
 
-    <!-- Раскомментируем скрипт -->
+    <!-- <hr> -->
+    <!-- <ul id="ads-list"></ul> -->
+
     <script>
-        try {
-            const tg = window.Telegram.WebApp;
-            if (!tg) throw new Error("Telegram.WebApp not found");
+        const logOutput = document.getElementById('log-output');
+        function log(message) {
+            console.log(message);
+            if (logOutput) {
+                const now = new Date();
+                const timeString = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
+                logOutput.textContent += `\n[${timeString}] ${message}`;
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+        }
 
-            const apiBaseUrl = "http://127.0.0.1:8000"; // Убедитесь, что API запущен здесь ИЛИ используйте URL ngrok
-            console.log(`[INIT] API Base URL: ${apiBaseUrl}`);
+        try {
+            log('Скрипт запущен');
+            const tg = window.Telegram.WebApp;
+            if (!tg) throw new Error("Telegram.WebApp не найден");
+            log('Объект tg найден');
+
+            // API URL пока не используется
+            // const apiBaseUrl = "http://127.0.0.1:8000"; // Или ngrok
+            // log(`API URL: ${apiBaseUrl}`);
 
             const categoriesListEl = document.getElementById('categories-list');
-            // Другие элементы пока не используем активно
-            // const adsListEl = document.getElementById('ads-list');
-            // const currentPathEl = document.getElementById('current-path');
-            // const backButton = document.getElementById('back-button');
-            const loadingEl = document.getElementById('loading');
-            const errorEl = document.getElementById('error-message');
+            if (!categoriesListEl) throw new Error("Элемент #categories-list не найден");
+            log('Элемент #categories-list найден');
 
-            if (!categoriesListEl || !loadingEl || !errorEl) throw new Error("Missing required DOM elements");
-
-            // --- Упрощенные функции ---
-
-            function showLoading() {
-                console.log('[UI] Показ загрузки');
-                loadingEl.style.display = 'block';
-                errorEl.style.display = 'none';
-            }
-
-            function hideLoading() {
-                 console.log('[UI] Скрытие загрузки');
-                 loadingEl.style.display = 'none';
-            }
-
-            function showError(message) {
-                 // Пока не показываем ошибку пользователю
-                 console.error(`[UI] ОШИБКА: ${message}`);
-                 hideLoading();
-                 categoriesListEl.innerHTML = `<li class="empty-list-message">Ошибка загрузки: ${message}</li>`; // Выводим ошибку в список
-                 // adsListEl.innerHTML = '';
-            }
-
-            // --- УПРОЩЕННАЯ ФУНКЦИЯ РЕНДЕРИНГА ---
+            // --- Упрощенная функция рендеринга (такая же, как в прошлый раз) ---
             function renderCategories(categories) {
-                console.log('[Render] Начало УПРОЩЕННОГО renderCategories с данными:', categories);
+                log(`Начало renderCategories. Получено категорий: ${categories?.length ?? 0}`);
                 try {
-                    if (!categoriesListEl) {
-                        console.error('[Render] ОШИБКА: categoriesListEl не найден!');
+                    categoriesListEl.innerHTML = ''; // Очистка
+                    if (!categories || categories.length === 0) {
+                        log('Нет категорий для рендеринга.');
+                        categoriesListEl.innerHTML = '<li>Категорий нет.</li>';
                         return;
                     }
-                    categoriesListEl.innerHTML = ''; // Очищаем
-                    if (!categories || categories.length === 0) {
-                         console.log('[Render] Нет категорий для отображения.');
-                         categoriesListEl.innerHTML = '<li class="empty-list-message">Категорий нет.</li>';
-                         return;
-                    }
-
+                    let count = 0;
                     categories.forEach((cat, index) => {
-                        console.log(`[Render] Обработка категории ${index}:`, cat);
-                        if (typeof cat !== 'object' || cat === null || typeof cat.id === 'undefined' || typeof cat.name === 'undefined') {
-                             console.error(`[Render] Пропуск некорректного объекта категории ${index}:`, cat);
-                             return;
+                        if (typeof cat === 'object' && cat !== null && cat.name) {
+                            log(`Рендеринг категории ${index}: ${cat.name}`);
+                            const li = document.createElement('li');
+                            li.textContent = cat.name + ' (JS Sync)'; // Добавим другой маркер
+                            categoriesListEl.appendChild(li);
+                            log(`  -- Элемент для "${cat.name}" добавлен в DOM.`);
+                            count++;
+                        } else {
+                            log(`Пропуск некорректного элемента категории на индексе ${index}`);
                         }
-
-                        // 1. Создаем li
-                        const li = document.createElement('li');
-                        console.log(`[Render]   ${index}: Создан li`);
-
-                        // 2. Создаем span
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'category-name';
-                        nameSpan.textContent = cat.name + " (JS)"; // Добавим маркер, что это из JS
-                        console.log(`[Render]   ${index}: Создан span с текстом: ${nameSpan.textContent}`);
-
-                        // 3. Добавляем span в li
-                        li.appendChild(nameSpan);
-                        console.log(`[Render]   ${index}: Span добавлен в li`);
-
-                        // 4. Добавляем li в основной список ul
-                        categoriesListEl.appendChild(li);
-                        console.log(`[Render]   ${index}: Li добавлен в categoriesListEl`);
                     });
-                    console.log('[Render] УПРОЩЕННЫЙ Рендеринг категорий завершен.');
+                    log(`Рендеринг завершен. Добавлено элементов: ${count}`);
                 } catch (renderError) {
-                     console.error('[Render] Ошибка внутри УПРОЩЕННОГО renderCategories:', renderError);
-                     showError(`Ошибка отображения категорий. ${renderError.message}`);
-                }
-            }
-            // --- КОНЕЦ УПРОЩЕННОЙ ФУНКЦИИ РЕНДЕРИНГА ---
-
-            // --- Функция запроса (оставляем как была, с отладкой) ---
-             async function fetchCategories(parentId = null) {
-                console.log(`[API] Запрос категорий для parentId: ${parentId}`);
-                showLoading();
-                let url = `${apiBaseUrl}/api/categories`;
-                if (parentId !== null) {
-                    url += `?parent_id=${parentId}`;
-                }
-                try {
-                    const response = await fetch(url);
-                    console.log(`[API] Ответ от ${url}: Статус ${response.status}`);
-                    if (!response.ok) {
-                        let errorText = response.statusText;
-                        try { errorText = await response.text(); } catch (e) {}
-                        console.error(`[API] HTTP ошибка! Статус: ${response.status}, Текст: ${errorText}`);
-                        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
-                    }
-                    const responseClone = response.clone();
-                    try {
-                        const categories = await response.json();
-                        console.log('[API] Категории успешно распарсены:', categories);
-                        hideLoading();
-                        renderCategories(categories); // Вызываем УПРОЩЕННЫЙ рендер
-                    } catch (jsonError) {
-                         console.error('[API] Ошибка парсинга JSON категорий:', jsonError);
-                         const responseText = await responseClone.text();
-                         console.error('[API] Тело ответа, вызвавшее ошибку JSON:', responseText);
-                         throw new Error(`Ошибка обработки ответа сервера (не JSON?). ${jsonError.message}`);
-                    }
-                } catch (error) {
-                    console.error('[API] Поймана ошибка в fetchCategories:', error);
-                    showError(`Не удалось загрузить категории. ${error.message}`);
+                    log(`ОШИБКА в renderCategories: ${renderError.message}`);
+                    showError(`Ошибка отображения категорий: ${renderError.message}`);
                 }
             }
 
-            // --- Остальные функции (навигация, ads и т.д.) пока не нужны ---
-            // function renderAds(...) {}
-            // async function fetchAds(...) {}
-            // function updateBackButton() {}
-            // function updatePathDisplay() {}
-            // function navigateToCategory(...) {}
-            // function showAds(...) {}
-            // function goBack() {}
-            // function subscribeToCategory(...) {}
-            // function viewAd(...) {}
+            function showError(message) { // Функция showError нужна для renderCategories
+                 log(`ОШИБКА: ${message}`);
+                 categoriesListEl.innerHTML = `<li style="color: red !important; background: white !important;">Ошибка: ${message}</li>`;
+            }
 
-            // --- Инициализация ---
-            console.log('[INIT] Telegram Web App скрипт выполняется.');
+            // --- Инициализация Telegram ---
+            log('Инициализация Telegram Web App...');
             tg.ready();
-            console.log('[INIT] Telegram.WebApp.ready() вызван.');
+            log('tg.ready() вызван.');
             tg.expand();
-            console.log('[INIT] Telegram.WebApp.expand() вызван.');
-            // backButton.addEventListener('click', goBack); // Кнопка "Назад" пока не нужна
-            console.log('[INIT] Запуск начальной загрузки категорий (parentId=null)...');
-            fetchCategories(null); // Запускаем загрузку
+            log('tg.expand() вызван.');
+
+            // --- ТЕСТОВЫЙ СИНХРОННЫЙ ВЫЗОВ РЕНДЕРИНГА ---
+            log('Вызов renderCategories с тестовыми данными СИНХРОННО...');
+            const testData = [
+                { id: 101, name: 'Тест Синхронный 1' },
+                { id: 102, name: 'Тест Синхронный 2' },
+                { id: 103, name: 'Тест Синхронный 3' }
+            ];
+            try {
+                renderCategories(testData); // Вызываем рендер с тестовыми данными
+                log('Синхронный renderCategories завершен УСПЕШНО.');
+            } catch (e) {
+                log(`!!! ОШИБКА при синхронном вызове renderCategories: ${e.message}`);
+                showError(`Ошибка синхронного рендеринга: ${e.message}`);
+            }
+            // --- КОНЕЦ ТЕСТОВОГО ВЫЗОВА ---
+
+            // --- Запрос к API пока ЗАКОММЕНТИРОВАН ---
+            // async function fetchCategories() { ... }
+            // log('Запуск fetchCategories...');
+            // fetchCategories(null);
 
         } catch(globalError) {
-            console.error("Глобальная ошибка инициализации Web App:", globalError);
-            const errorDiv = document.getElementById('error-message') || document.createElement('div');
-            // ... код отображения глобальной ошибки ...
+            log(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
+            alert(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
+            document.body.innerHTML = `<div style="color: red; padding: 20px;">Глобальная ошибка: ${globalError.message}</div>`;
         }
     </script>
-
 </body>
 </html>
