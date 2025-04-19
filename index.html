@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Каталог (Тест Синхронного Рендера)</title>
+    <title>Каталог (Тест DOMContentLoaded)</title> <!-- Изменили title для ясности -->
     <!-- Подключаем скрипт Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -22,129 +22,169 @@
             padding: 8px 5px;
             border-bottom: 1px solid black;
             cursor: pointer;
-            display: block; /* Упрощенный display */
+            display: block; /* Упрощенный display для теста */
             min-height: 30px;
             color: black !important; /* Тестовый цвет текста */
             background-color: lightyellow !important; /* Тестовый цвет фона */
             margin: 5px 0;
         }
-        .category-name { /* Этот класс не используется в упрощенном рендере */ }
+        /* Скрываем ненужные элементы для этого теста */
         button { display: none; }
         .nav-arrow { display: none; }
         #back-button, #loading, #error-message { display: none; }
         .empty-list-message { padding: 15px 5px; text-align: center; color: gray; }
-        #log-output { margin-top: 10px; border: 1px solid #ccc; padding: 5px; height: 200px; overflow-y: scroll; font-size: 0.8em; white-space: pre-wrap; }
+        #log-output { margin-top: 10px; border: 1px solid #ccc; padding: 5px; height: 200px; overflow-y: scroll; font-size: 0.8em; white-space: pre-wrap; background-color: #f8f8f8; color: #333; }
     </style>
 </head>
 <body>
 
-    <h2 id="current-path">Каталог (Тест Синхронного Рендера)</h2>
+    <h2 id="current-path">Каталог (Тест DOMContentLoaded)</h2>
     <button id="back-button">⬅️ Назад</button>
     <div id="loading">Загрузка...</div>
     <div id="error-message"></div>
 
     <ul id="categories-list">
-        <!-- Сюда JS будет добавлять элементы СИНХРОННО -->
+        <!-- Сюда JS будет добавлять элементы СИНХРОННО после загрузки DOM -->
     </ul>
     <div id="log-output">Логи:</div>
 
+    <!-- Остальные элементы пока не нужны -->
     <!-- <hr> -->
     <!-- <ul id="ads-list"></ul> -->
 
+    <!-- ИЗМЕНЕННЫЙ БЛОК SCRIPT -->
     <script>
-        const logOutput = document.getElementById('log-output');
-        function log(message) {
-            console.log(message);
-            if (logOutput) {
-                const now = new Date();
-                const timeString = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
-                logOutput.textContent += `\n[${timeString}] ${message}`;
-                logOutput.scrollTop = logOutput.scrollHeight;
-            }
-        }
+        // Весь код будет выполняться только после загрузки DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            // Находим элемент для логов СНАЧАЛА
+            const logOutput = document.getElementById('log-output');
 
-        try {
-            log('Скрипт запущен');
-            const tg = window.Telegram.WebApp;
-            if (!tg) throw new Error("Telegram.WebApp не найден");
-            log('Объект tg найден');
-
-            // API URL пока не используется
-            // const apiBaseUrl = "http://127.0.0.1:8000"; // Или ngrok
-            // log(`API URL: ${apiBaseUrl}`);
-
-            const categoriesListEl = document.getElementById('categories-list');
-            if (!categoriesListEl) throw new Error("Элемент #categories-list не найден");
-            log('Элемент #categories-list найден');
-
-            // --- Упрощенная функция рендеринга (такая же, как в прошлый раз) ---
-            function renderCategories(categories) {
-                log(`Начало renderCategories. Получено категорий: ${categories?.length ?? 0}`);
-                try {
-                    categoriesListEl.innerHTML = ''; // Очистка
-                    if (!categories || categories.length === 0) {
-                        log('Нет категорий для рендеринга.');
-                        categoriesListEl.innerHTML = '<li>Категорий нет.</li>';
-                        return;
-                    }
-                    let count = 0;
-                    categories.forEach((cat, index) => {
-                        if (typeof cat === 'object' && cat !== null && cat.name) {
-                            log(`Рендеринг категории ${index}: ${cat.name}`);
-                            const li = document.createElement('li');
-                            li.textContent = cat.name + ' (JS Sync)'; // Добавим другой маркер
-                            categoriesListEl.appendChild(li);
-                            log(`  -- Элемент для "${cat.name}" добавлен в DOM.`);
-                            count++;
-                        } else {
-                            log(`Пропуск некорректного элемента категории на индексе ${index}`);
-                        }
-                    });
-                    log(`Рендеринг завершен. Добавлено элементов: ${count}`);
-                } catch (renderError) {
-                    log(`ОШИБКА в renderCategories: ${renderError.message}`);
-                    showError(`Ошибка отображения категорий: ${renderError.message}`);
+            // Функция логгирования должна быть доступна сразу внутри обработчика
+            function log(message) {
+                console.log(message); // Всегда логируем в консоль браузера
+                if (logOutput) { // Проверяем, найден ли элемент логов
+                    const now = new Date();
+                    const timeString = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
+                    // Добавляем новую строку лога, сохраняя старые
+                    logOutput.textContent += `\n[${timeString}] ${message}`;
+                    logOutput.scrollTop = logOutput.scrollHeight; // Прокручиваем вниз
+                } else {
+                     // Если элемент логов не найден на момент вызова log, сообщаем в консоль
+                     console.warn("logOutput элемент не найден, сообщение только в консоли:", message);
                 }
             }
 
-            function showError(message) { // Функция showError нужна для renderCategories
-                 log(`ОШИБКА: ${message}`);
-                 categoriesListEl.innerHTML = `<li style="color: red !important; background: white !important;">Ошибка: ${message}</li>`;
-            }
-
-            // --- Инициализация Telegram ---
-            log('Инициализация Telegram Web App...');
-            tg.ready();
-            log('tg.ready() вызван.');
-            tg.expand();
-            log('tg.expand() вызван.');
-
-            // --- ТЕСТОВЫЙ СИНХРОННЫЙ ВЫЗОВ РЕНДЕРИНГА ---
-            log('Вызов renderCategories с тестовыми данными СИНХРОННО...');
-            const testData = [
-                { id: 101, name: 'Тест Синхронный 1' },
-                { id: 102, name: 'Тест Синхронный 2' },
-                { id: 103, name: 'Тест Синхронный 3' }
-            ];
             try {
-                renderCategories(testData); // Вызываем рендер с тестовыми данными
-                log('Синхронный renderCategories завершен УСПЕШНО.');
-            } catch (e) {
-                log(`!!! ОШИБКА при синхронном вызове renderCategories: ${e.message}`);
-                showError(`Ошибка синхронного рендеринга: ${e.message}`);
+                log('DOM загружен, основной скрипт запущен');
+
+                const tg = window.Telegram.WebApp;
+                if (!tg) throw new Error("Telegram.WebApp не найден");
+                log('Объект tg найден');
+
+                // Теперь поиск элементов должен быть безопасен
+                const categoriesListEl = document.getElementById('categories-list');
+                if (!categoriesListEl) throw new Error("Элемент #categories-list не найден ПОСЛЕ DOMContentLoaded");
+                log('Элемент #categories-list найден');
+
+                // --- Упрощенная функция рендеринга (без изменений от прошлой версии) ---
+                function renderCategories(categories) {
+                    log(`Начало renderCategories. Получено категорий: ${categories?.length ?? 0}`);
+                    try {
+                        categoriesListEl.innerHTML = ''; // Очистка
+                        if (!categories || categories.length === 0) {
+                            log('Нет категорий для рендеринга.');
+                            categoriesListEl.innerHTML = '<li>Категорий нет.</li>';
+                            return;
+                        }
+                        let count = 0;
+                        categories.forEach((cat, index) => {
+                            if (typeof cat === 'object' && cat !== null && cat.name) {
+                                log(`Рендеринг категории ${index}: ${cat.name}`);
+                                const li = document.createElement('li');
+                                li.textContent = cat.name + ' (JS Sync)'; // Добавим маркер
+                                categoriesListEl.appendChild(li);
+                                log(`  -- Элемент для "${cat.name}" добавлен в DOM.`);
+                                count++;
+                            } else {
+                                log(`Пропуск некорректного элемента категории на индексе ${index}`);
+                            }
+                        });
+                        log(`Рендеринг завершен. Добавлено элементов: ${count}`);
+                    } catch (renderError) {
+                        log(`ОШИБКА в renderCategories: ${renderError.message}`);
+                        // Используем локальную showError если она определена
+                        if (typeof showError === 'function') {
+                            showError(`Ошибка отображения категорий: ${renderError.message}`);
+                        } else { // Иначе просто логируем
+                             console.error(`[Render Error Log]: Ошибка отображения категорий. ${renderError.message}`);
+                        }
+                    }
+                }
+
+                 // Определим showError здесь же, чтобы она была доступна
+                 function showError(message) {
+                     log(`ОШИБКА: ${message}`);
+                     if (categoriesListEl) {
+                         categoriesListEl.innerHTML = `<li style="color: red !important; background: white !important;">Ошибка: ${message}</li>`;
+                     } else {
+                          console.error("Не могу показать ошибку, categoriesListEl не найден!");
+                     }
+                 }
+
+
+                // --- Инициализация Telegram ---
+                log('Инициализация Telegram Web App...');
+                tg.ready();
+                log('tg.ready() вызван.');
+                tg.expand();
+                log('tg.expand() вызван.');
+
+                // --- ТЕСТОВЫЙ СИНХРОННЫЙ ВЫЗОВ РЕНДЕРИНГА ---
+                log('Вызов renderCategories с тестовыми данными СИНХРОННО...');
+                const testData = [
+                    { id: 101, name: 'Тест Синхронный 1' },
+                    { id: 102, name: 'Тест Синхронный 2' },
+                    { id: 103, name: 'Тест Синхронный 3' }
+                ];
+                try {
+                    renderCategories(testData); // Вызываем рендер с тестовыми данными
+                    log('Синхронный renderCategories завершен УСПЕШНО.');
+                } catch (e) {
+                    log(`!!! ОШИБКА при синхронном вызове renderCategories: ${e.message}`);
+                    showError(`Ошибка синхронного рендеринга: ${e.message}`);
+                }
+                // --- КОНЕЦ ТЕСТОВОГО ВЫЗОВА ---
+
+                // --- Запрос к API пока ЗАКОММЕНТИРОВАН ---
+                // async function fetchCategories() { ... }
+                // log('Запуск fetchCategories...');
+                // fetchCategories(null);
+
+            } catch(globalError) {
+                // Используем функцию log для вывода ошибки и на экран (если logOutput найден)
+                log(`ГЛОБАЛЬНАЯ ОШИБКА внутри DOMContentLoaded: ${globalError.message}`);
+                // alert(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`); // Alert может быть навязчивым
+
+                 // Пытаемся отобразить ошибку в теле документа, если другие элементы не нашлись
+                 const errorDiv = document.getElementById('error-message') || document.createElement('div');
+                 errorDiv.id = 'error-message';
+                 errorDiv.textContent = `Глобальная ошибка: ${globalError.message}.`;
+                 errorDiv.style.display = 'block';
+                 errorDiv.style.color = 'red';
+                 errorDiv.style.padding = '20px';
+                 errorDiv.style.fontWeight = 'bold';
+                 // Вставляем ошибку в body, если не нашли #error-message
+                 if (!document.getElementById('error-message')) document.body.prepend(errorDiv);
+                 const loadingDiv = document.getElementById('loading'); // Скрываем загрузку, если есть
+                 if(loadingDiv) loadingDiv.style.display = 'none';
+                 const catList = document.getElementById('categories-list'); // Очищаем список на всякий случай
+                 if(catList) catList.innerHTML = '';
+
+                 // Дублируем ошибку в консоль для надежности
+                 console.error(`ГЛОБАЛЬНАЯ ОШИБКА внутри DOMContentLoaded: ${globalError.message}`, globalError);
+
             }
-            // --- КОНЕЦ ТЕСТОВОГО ВЫЗОВА ---
-
-            // --- Запрос к API пока ЗАКОММЕНТИРОВАН ---
-            // async function fetchCategories() { ... }
-            // log('Запуск fetchCategories...');
-            // fetchCategories(null);
-
-        } catch(globalError) {
-            log(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
-            alert(`ГЛОБАЛЬНАЯ ОШИБКА: ${globalError.message}`);
-            document.body.innerHTML = `<div style="color: red; padding: 20px;">Глобальная ошибка: ${globalError.message}</div>`;
-        }
+        }); // <--- Закрывающая скобка для document.addEventListener
     </script>
 </body>
 </html>
